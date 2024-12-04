@@ -42,16 +42,20 @@ export default function FileGrid({ bucketName, initialFiles }: FileGridProps) {
     };
   }, [initialFiles, searchQuery, currentPage, itemsPerPage]);
 
+  // Calculate total evaluated files
+  const evaluatedCount = useMemo(() => {
+    return Object.values(fileStatuses).filter(status => 
+      status !== null && status.isFinished
+    ).length;
+  }, [fileStatuses]);
+
   const fetchStatus = async (fileName: string) => {
     try {
-      console.log(`Fetching status for ${fileName}`);
       const response = await fetch(
         `/api/firestore/?collection=${bucketName}&docName=${encodeURIComponent(fileName)}`
       );
       
-      console.log(`Response status for ${fileName}:`, response.status);
       const result = await response.json();
-      console.log(`Status result for ${fileName}:`, result);
       
       return result.success ? result.data : null;
     } catch (error) {
@@ -62,20 +66,16 @@ export default function FileGrid({ bucketName, initialFiles }: FileGridProps) {
 
   useEffect(() => {
     let mounted = true;
-    console.log('Effect running with files:', paginatedFiles.currentFiles.map(f => f.name));
 
     const fetchStatuses = async () => {
-      console.log('Starting status fetch for current page');
       const newStatuses: FileStatus = {};
       
       for (const file of paginatedFiles.currentFiles) {
         if (!mounted) {
-          console.log('Component unmounted, stopping fetches');
           break;
         }
         
         const status = await fetchStatus(file.name);
-        console.log(`Received status for ${file.name}:`, status);
         
         if (mounted) {
           newStatuses[file.name] = status;
@@ -83,7 +83,6 @@ export default function FileGrid({ bucketName, initialFiles }: FileGridProps) {
       }
 
       if (mounted) {
-        console.log('Setting new statuses:', newStatuses);
         setFileStatuses(newStatuses);
       }
     };
@@ -91,7 +90,6 @@ export default function FileGrid({ bucketName, initialFiles }: FileGridProps) {
     fetchStatuses();
 
     return () => {
-      console.log('Cleanup: marking component as unmounted');
       mounted = false;
     };
   }, [bucketName, paginatedFiles.currentFiles]);
@@ -157,6 +155,7 @@ export default function FileGrid({ bucketName, initialFiles }: FileGridProps) {
 
     return (
       <div className="flex items-center space-x-2">
+        
         <div className={`flex items-center ${status.isFinished ? 'text-green-500' : 'text-yellow-500'} text-xs`}>
           <CheckCircleIcon className="h-4 w-4 mr-1" />
           {status.isFinished ? 'Completed' : 'In Progress'}
@@ -172,14 +171,39 @@ export default function FileGrid({ bucketName, initialFiles }: FileGridProps) {
     <div>
       {/* Navigation and Search */}
       <div className="mb-8 space-y-4">
-        <button
-          onClick={handleBackClick}
-          className="flex items-center text-gray-400 hover:text-white transition-colors"
-        >
-          <ArrowLeftIcon className="h-5 w-5 mr-2" />
-          Back to Buckets
-        </button>
-
+        <div className="flex justify-between items-center mb-4">
+          <button
+            onClick={handleBackClick}
+            className="flex items-center text-gray-400 hover:text-white transition-colors"
+          >
+            <ArrowLeftIcon className="h-5 w-5 mr-2" />
+            Back to Buckets
+          </button>
+          
+          <span className="text-sm bg-gray-700 px-3 py-1 rounded-full flex items-center gap-3">
+            <span>
+              <span className="text-green-400 font-medium">{evaluatedCount}</span>
+              <span className="text-gray-400">/</span>
+              <span className="text-gray-300">{initialFiles.length}</span>
+              <span className="text-gray-400"> completed</span>
+            </span>
+            <span className="text-gray-400">•</span>
+            <span>
+              <span className="text-yellow-400 font-medium">{Object.values(fileStatuses).filter(status => 
+                status !== null && !status.isFinished
+              ).length}</span>
+              <span className="text-gray-400">/</span>
+              <span className="text-gray-300">{initialFiles.length}</span>
+              <span className="text-gray-400"> in progress</span>
+            </span>
+          </span>
+          
+        </div>
+        {evaluatedCount === initialFiles.length && (
+          <div className="bg-green-500 text-white p-4 rounded-md mb-4 text-center">
+            🎉 Congratulations! You have completed all the labeling tasks. Please contact the developer team for the next step.
+          </div>
+        )}
         <div className="relative">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input

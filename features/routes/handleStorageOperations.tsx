@@ -1,4 +1,5 @@
   // features/routes/handleStorageOperations.ts
+
   import { MindMapFile,Bucket, PatternState,FileResponse } from '@/components/types/type';
   import { constructVercelURL } from '@/utils/generateURL';
   import { formatGCSUrl } from '@/utils/gcsUrl';
@@ -11,21 +12,15 @@
         if (!data.success) {
           throw new Error(data.message);
         }
-        
+
         // Filter out any non-folder items and map to bucket format
-        const buckets = data.folders
-          .filter((folder: { prefix: string; type: string; itemCount: number }) => 
-            folder.prefix && folder.prefix.trim() !== ''
-          )
-          .map((folder: { prefix: string; type: string; itemCount: number }) => ({
-            name: folder.prefix,
-            displayName: folder.prefix.replace(/-/g, ' '),
-            itemCount: folder.itemCount,
-            type: 'folder',
-            lastModified: new Date().toISOString()
-          }));
-  
-        console.log('Mapped buckets:', buckets); // Debug log
+        const buckets = data.folders.map((folder: { prefix: string; type: string; itemCount: number }) => ({
+          name: folder.prefix,
+          displayName: folder.prefix,  // Removed replace() to preserve original name
+          itemCount: folder.itemCount,
+          type: 'folder',
+          lastModified: new Date().toISOString()
+        }));
         
         return {
           success: true,
