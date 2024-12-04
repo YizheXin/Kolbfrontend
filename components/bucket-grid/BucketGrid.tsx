@@ -1,4 +1,3 @@
-// components/bucket-grid/BucketGrid.tsx
 'use client';
 
 import React, { useState } from 'react';
@@ -25,7 +24,7 @@ export default function BucketGrid({ initialBuckets }: BucketGridProps) {
   };
 
   return (
-    <div>
+    <div className="min-h-[calc(100vh-18rem)]"> {/* Adjusted minimum height */}
       {/* Search Bar */}
       <div className="mb-8">
         <div className="relative">
