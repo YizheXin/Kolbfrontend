@@ -1,7 +1,7 @@
 import { StorageOperations } from '@/features/routes/handleStorageOperations';
 import ImageEvaluation from '@/components/evaluation_interface/ImageEvaluationPage';
 import { notFound } from 'next/navigation';
-import { MindMapFile,FileResponse  } from '@/components/types/type';
+import { FileResponse  } from '@/components/types/type';
 
 export default async function ImagePage({
   params: { folderName, fileName }

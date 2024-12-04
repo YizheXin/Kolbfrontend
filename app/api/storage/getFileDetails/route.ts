@@ -1,7 +1,6 @@
 // app/api/storage/getFileDetails/route.ts
 import { NextRequest } from 'next/server';
 import { Storage } from '@google-cloud/storage';
-import { FileListResponse } from '@/components/types/type';
 import { parseSize } from '@/utils/getSize';
 import { formatGCSUrl } from '@/utils/gcsUrl';
 const storage = new Storage();

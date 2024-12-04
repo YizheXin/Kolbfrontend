@@ -1,7 +1,6 @@
 // app/api/storage/getFiles/route.ts
 import { NextRequest } from 'next/server';
 import { Storage } from '@google-cloud/storage';
-import { FileItem, FileListResponse, FileMetadata } from '@/components/types/type';
 import { formatGCSUrl } from '@/utils/gcsUrl';
 import { parseSize } from '@/utils/getSize';
 // Initialize storage using ADC (Application Default Credentials)
