@@ -7,6 +7,7 @@ import { MagnifyingGlassIcon, ArrowLeftIcon, CheckCircleIcon, ClockIcon } from '
 import { MindMapFile } from '../types/type';
 import { generatePagination } from './Pagination';
 import { useFileContext } from '@/context/FileContext';
+
 interface FileGridProps {
   bucketName: string;
 }
@@ -27,6 +28,7 @@ export default function FileGrid({ bucketName }: FileGridProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [fileStatuses, setFileStatuses] = useState<FileStatus>({});
+  const [statusesFetchedForPage, setStatusesFetchedForPage] = useState(false); // Track if current page's statuses are fetched
   const itemsPerPage = 12;
 
   // Calculate paginated files
@@ -39,14 +41,14 @@ export default function FileGrid({ bucketName }: FileGridProps) {
     return {
       currentFiles: filtered.slice(startIndex, endIndex),
       totalPages: Math.ceil(filtered.length / itemsPerPage),
-      totalFiles: filtered.length
+      totalFiles: filtered.length,
     };
   }, [initialFiles, searchQuery, currentPage, itemsPerPage]);
 
   // Calculate total evaluated files
   const evaluatedCount = useMemo(() => {
-    return Object.values(fileStatuses).filter(status => 
-      status !== null && status.isFinished
+    return Object.values(fileStatuses).filter(
+      (status) => status !== null && status.isFinished
     ).length;
   }, [fileStatuses]);
 
@@ -55,9 +57,7 @@ export default function FileGrid({ bucketName }: FileGridProps) {
       const response = await fetch(
         `/api/firestore/?collection=${bucketName}&docName=${encodeURIComponent(fileName)}`
       );
-      
       const result = await response.json();
-      
       return result.success ? result.data : null;
     } catch (error) {
       console.error(`Error fetching status for ${fileName}:`, error);
@@ -68,27 +68,25 @@ export default function FileGrid({ bucketName }: FileGridProps) {
   useEffect(() => {
     let mounted = true;
 
-    const fetchStatuses = async () => {
+    const fetchStatusesForCurrentPage = async () => {
       const newStatuses: FileStatus = {};
-      
+      setStatusesFetchedForPage(false); // Reset for new page
+
       for (const file of paginatedFiles.currentFiles) {
-        if (!mounted) {
-          break;
-        }
-        
+        if (!mounted) break;
         const status = await fetchStatus(file.name);
-        
         if (mounted) {
           newStatuses[file.name] = status;
+          setFileStatuses((prev) => ({ ...prev, [file.name]: status })); // Update statuses incrementally
         }
       }
 
       if (mounted) {
-        setFileStatuses(newStatuses);
+        setStatusesFetchedForPage(true); // Mark current page's statuses as fetched
       }
     };
 
-    fetchStatuses();
+    fetchStatusesForCurrentPage();
 
     return () => {
       mounted = false;
@@ -133,7 +131,7 @@ export default function FileGrid({ bucketName }: FileGridProps) {
 
   const renderStatusIndicator = (file: MindMapFile) => {
     const status = fileStatuses[file.name];
-    
+
     if (status === undefined) {
       return (
         <div className="flex items-center text-gray-400 text-xs">
@@ -156,8 +154,11 @@ export default function FileGrid({ bucketName }: FileGridProps) {
 
     return (
       <div className="flex items-center space-x-2">
-        
-        <div className={`flex items-center ${status.isFinished ? 'text-green-500' : 'text-yellow-500'} text-xs`}>
+        <div
+          className={`flex items-center ${
+            status.isFinished ? 'text-green-500' : 'text-yellow-500'
+          } text-xs`}
+        >
           <CheckCircleIcon className="h-4 w-4 mr-1" />
           {status.isFinished ? 'Completed' : 'In Progress'}
         </div>
@@ -180,7 +181,7 @@ export default function FileGrid({ bucketName }: FileGridProps) {
             <ArrowLeftIcon className="h-5 w-5 mr-2" />
             Back to Buckets
           </button>
-          
+
           <span className="text-sm bg-gray-700 px-3 py-1 rounded-full flex items-center gap-3">
             <span>
               <span className="text-green-400 font-medium">{evaluatedCount}</span>
@@ -198,13 +199,15 @@ export default function FileGrid({ bucketName }: FileGridProps) {
               <span className="text-gray-400"> in progress</span>
             </span>
           </span>
-          
         </div>
-        {evaluatedCount === initialFiles.length && (
-          <div className="bg-green-500 text-white p-4 rounded-md mb-4 text-center">
-            🎉 Congratulations! You have completed all the labeling tasks. Please contact the developer team for the next step.
-          </div>
-        )}
+        {statusesFetchedForPage &&
+          evaluatedCount === initialFiles.length &&
+          initialFiles.length > 0 && (
+            <div className="bg-green-500 text-white p-4 rounded-md mb-4 text-center">
+              🎉 Congratulations! You have completed all the labeling tasks. Please contact the
+              developer team for the next step.
+            </div>
+          )}
         <div className="relative">
           <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
@@ -218,35 +221,38 @@ export default function FileGrid({ bucketName }: FileGridProps) {
       </div>
 
       {/* Files Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {paginatedFiles.currentFiles.map((file) => (
-          <motion.div
-            key={file.blobPath}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => handleFileSelect(file)}
-            className="bg-gray-800 rounded-lg overflow-hidden cursor-pointer group"
-          >
-            <div className="aspect-w-16 aspect-h-9 relative">
-              <img
-                src={file.url}
-                alt={file.name}
-                className="w-full h-full object-cover transition-opacity group-hover:opacity-90"
-              />
-            </div>
-
-            <div className="p-3">
-              <p className="text-sm text-gray-300 truncate">{file.name}</p>
-              <p className="text-xs text-gray-500 mt-1">
-                {new Date(file.timeCreated).toLocaleDateString()}
-              </p>
-              <div className="mt-2">
-                {renderStatusIndicator(file)}
+      {!statusesFetchedForPage && paginatedFiles.totalFiles > 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-400">Loading files...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {paginatedFiles.currentFiles.map((file) => (
+            <motion.div
+              key={file.blobPath}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handleFileSelect(file)}
+              className="bg-gray-800 rounded-lg overflow-hidden cursor-pointer group"
+            >
+              <div className="aspect-w-16 aspect-h-9 relative">
+                <img
+                  src={file.url}
+                  alt={file.name}
+                  className="w-full h-full object-cover transition-opacity group-hover:opacity-90"
+                />
               </div>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+              <div className="p-3">
+                <p className="text-sm text-gray-300 truncate">{file.name}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {new Date(file.timeCreated).toLocaleDateString()}
+                </p>
+                <div className="mt-2">{renderStatusIndicator(file)}</div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       {/* Pagination */}
       {paginatedFiles.totalPages > 1 && (
@@ -273,11 +279,6 @@ export default function FileGrid({ bucketName }: FileGridProps) {
         </div>
       )}
 
-      {paginatedFiles.totalFiles === 0 && (
-        <div className="text-center py-12">
-          <p className="text-gray-400">No files found</p>
-        </div>
-      )}
     </div>
   );
 }
