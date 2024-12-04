@@ -109,7 +109,7 @@ export interface FileStatus {
 
 
 // Type guards
-export function isStorageFile(file: any): file is StorageFile {
+export function isStorageFile(file: unknown): file is StorageFile {
   return (
     typeof file === 'object' &&
     file !== null &&
@@ -119,7 +119,7 @@ export function isStorageFile(file: any): file is StorageFile {
   );
 }
 
-export function isMindMapFile(file: any): file is MindMapFile {
+export function isMindMapFile(file: unknown): file is MindMapFile {
   return (
     typeof file === 'object' &&
     file !== null &&
@@ -132,7 +132,7 @@ export function isMindMapFile(file: any): file is MindMapFile {
 }
 
 // Additional type guard for API responses
-export function isFileListResponse(response: any): response is FileListResponse {
+export function isFileListResponse(response: unknown): response is FileListResponse {
   return (
     typeof response === 'object' &&
     response !== null &&
