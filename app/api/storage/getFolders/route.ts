@@ -8,7 +8,7 @@ const mindmapBucketName = process.env.GCP_ICS_MINDMAPS || 'ics-analysis-dev-mind
 // Helper function to check if file is a valid image
 const isValidImageFile = (filename: string): boolean => {
   // List of valid image extensions
-  const validExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
+  const validExtensions = ['.png', '.jpg', '.jpeg', '.JPG','.PNG','.JPEG']; //'.gif', '.webp'
   const ext = filename.toLowerCase().split('.').pop();
   return ext ? validExtensions.includes(`.${ext}`) : false;
 };
