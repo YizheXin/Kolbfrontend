@@ -1,6 +1,6 @@
 import { Inter } from 'next/font/google';
 import './globals.css';
-
+import { FileProvider } from '@/context/FileContext';
 const inter = Inter({ subsets: ['latin'] });
 
 export default function RootLayout({
@@ -18,11 +18,13 @@ export default function RootLayout({
             <p className="text-gray-300 text-lg">Analyze and evaluate mind maps with ease</p>
           </div>
         </div>
+        <FileProvider>
+          {/* Main Content */}
+          <main className="flex-1 flex flex-col max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+            {children}
+          </main>
+        </FileProvider>
 
-        {/* Main Content */}
-        <main className="flex-1 flex flex-col max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-          {children}
-        </main>
 
         {/* Footer */}
         <footer className="w-full py-4 bg-gray-800/50 backdrop-blur-sm mt-auto">

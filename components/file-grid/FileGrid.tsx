@@ -6,9 +6,9 @@ import { motion } from 'framer-motion';
 import { MagnifyingGlassIcon, ArrowLeftIcon, CheckCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { MindMapFile } from '../types/type';
 import { generatePagination } from './Pagination';
+import { useFileContext } from '@/context/FileContext';
 interface FileGridProps {
   bucketName: string;
-  initialFiles: MindMapFile[];
 }
 
 interface EvaluationStatus {
@@ -20,7 +20,8 @@ interface FileStatus {
   [key: string]: EvaluationStatus | null;
 }
 
-export default function FileGrid({ bucketName, initialFiles }: FileGridProps) {
+export default function FileGrid({ bucketName }: FileGridProps) {
+  const { initialFiles } = useFileContext();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');

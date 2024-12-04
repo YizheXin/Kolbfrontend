@@ -26,20 +26,28 @@ type Pattern = typeof patterns[number];
 interface ImageEvaluationProps {
   bucketName: string;
   file: MindMapFile;
+  initialFiles: MindMapFile[]; // Add this to track all files in the bucket
 }
 
 interface ToastState {
   show: boolean;
   message: string;
-  type: 'success' | 'error' |'warning';
+  type: 'success' | 'error' | 'warning';
 }
 
-export default function ImageEvaluation({ bucketName, file }: ImageEvaluationProps) {
+export default function ImageEvaluation({
+  bucketName,
+  file,
+  initialFiles, // Access all files in the bucket
+}: ImageEvaluationProps) {
   const router = useRouter();
   const collectionName = bucketName;
 
+  // Find the current file's index
+  const currentIndex = initialFiles.findIndex((f) => f.name === file.name);
+
   // Initialize all patterns as false
-  const initialPatternState = Object.fromEntries(patterns.map(p => [p, false]));
+  const initialPatternState = Object.fromEntries(patterns.map((p) => [p, false]));
   const [selectedPatterns, setSelectedPatterns] = useState<PatternState>(initialPatternState);
   const [isFinished, setIsFinished] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
@@ -47,14 +55,13 @@ export default function ImageEvaluation({ bucketName, file }: ImageEvaluationPro
   const [toast, setToast] = useState<ToastState>({
     show: false,
     message: '',
-    type: 'success'
+    type: 'success',
   });
 
-  const showToast = (message: string, type: 'success' | 'error' |'warning') => {
+  const showToast = (message: string, type: 'success' | 'error' | 'warning') => {
     setToast({ show: true, message, type });
-    // Auto-hide after 3 seconds
     setTimeout(() => {
-      setToast(prev => ({ ...prev, show: false }));
+      setToast((prev) => ({ ...prev, show: false }));
     }, 3000);
   };
 
@@ -62,14 +69,18 @@ export default function ImageEvaluation({ bucketName, file }: ImageEvaluationPro
     async function fetchEvaluation() {
       setLoading(true);
       try {
-        const response = await fetch(constructVercelURL(`/api/firestore/?collection=${collectionName}&docName=${encodeURIComponent(file.name)}`));
+        const response = await fetch(
+          constructVercelURL(
+            `/api/firestore/?collection=${collectionName}&docName=${encodeURIComponent(file.name)}`
+          )
+        );
         const result = await response.json();
 
         if (result.success && result.data) {
           const existingPatterns = result.data.patterns || {};
           setSelectedPatterns({
             ...initialPatternState,
-            ...existingPatterns
+            ...existingPatterns,
           });
           setIsFinished(result.data.isFinished || false);
         }
@@ -107,7 +118,6 @@ export default function ImageEvaluation({ bucketName, file }: ImageEvaluationPro
           );
         } else {
           showToast('Evaluation submitted successfully', 'success');
-          // Only redirect if the evaluation is finished
           setTimeout(() => {
             router.push(`/${encodeURIComponent(bucketName)}`);
           }, 1000);
@@ -133,6 +143,20 @@ export default function ImageEvaluation({ bucketName, file }: ImageEvaluationPro
     }));
   };
 
+  const handleNext = () => {
+    if (currentIndex < initialFiles.length - 1) {
+      const nextFile = initialFiles[currentIndex + 1];
+      router.push(`/${encodeURIComponent(bucketName)}/${encodeURIComponent(nextFile.name)}`);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      const prevFile = initialFiles[currentIndex - 1];
+      router.push(`/${encodeURIComponent(bucketName)}/${encodeURIComponent(prevFile.name)}`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 p-8">
       {/* Toast Notification */}
@@ -141,13 +165,13 @@ export default function ImageEvaluation({ bucketName, file }: ImageEvaluationPro
           <Toast
             message={toast.message}
             type={toast.type}
-            onClose={() => setToast(prev => ({ ...prev, show: false }))}
+            onClose={() => setToast((prev) => ({ ...prev, show: false }))}
           />
         )}
       </AnimatePresence>
 
       {/* Navigation */}
-      <div className="mb-6">
+      <div className="mb-6 flex justify-between">
         <button
           onClick={() => router.push(`/${encodeURIComponent(bucketName)}`)}
           className="flex items-center text-gray-400 hover:text-white transition-colors"
@@ -155,6 +179,22 @@ export default function ImageEvaluation({ bucketName, file }: ImageEvaluationPro
           <ArrowLeftIcon className="h-5 w-5 mr-2" />
           Back to Files
         </button>
+        <div className="flex space-x-4">
+          <button
+            onClick={handlePrevious}
+            disabled={currentIndex <= 0}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={currentIndex >= initialFiles.length - 1}
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}

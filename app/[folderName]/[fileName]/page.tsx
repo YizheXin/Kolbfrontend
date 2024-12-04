@@ -1,32 +1,47 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { StorageOperations } from '@/features/routes/handleStorageOperations';
 import ImageEvaluation from '@/components/evaluation_interface/ImageEvaluationPage';
+import { useFileContext } from '@/context/FileContext';
 import { notFound } from 'next/navigation';
-import { FileResponse  } from '@/components/types/type';
+import { FileResponse, MindMapFile } from '@/components/types/type';
 
-export default async function ImagePage({
-  params: { folderName, fileName }
-}: {
-  params: { folderName: string; fileName: string }
-}) {
-  try {
-    console.log("checking folderName and fileName", folderName, fileName);
-    const response: FileResponse = await StorageOperations.fetchFileDetails(
-      decodeURIComponent(folderName),
-      decodeURIComponent(fileName)
-    );
+export default function ImagePage({ params: { folderName, fileName } }: { params: { folderName: string; fileName: string } }) {
+  const { initialFiles } = useFileContext();
+  const [fileDetails, setFileDetails] = useState<FileResponse | null>(null);
 
-    if (!response.success || !response.data) {
-      notFound();
-    }
+  useEffect(() => {
+    const fetchFileDetails = async () => {
+      if (!initialFiles || initialFiles.length === 0) {
+        notFound();
+      }
 
-    return (
-      <ImageEvaluation
-        bucketName={folderName}
-        file={response.data.file}
-      />
-    );
-  } catch (error) {
-    console.error('Error loading image:', error);
-    notFound();
+      const decodedFolderName = decodeURIComponent(folderName);
+      const decodedFileName = decodeURIComponent(fileName);
+
+      const response = await StorageOperations.fetchFileDetails(decodedFolderName, decodedFileName);
+
+      if (!response.success || !response.data) {
+        notFound();
+      }
+
+      setFileDetails(response); // Set the entire response
+    };
+
+    fetchFileDetails();
+  }, [folderName, fileName, initialFiles]);
+
+  if (!fileDetails || !fileDetails.data) {
+    // Show a loading or error state if `fileDetails` is not ready
+    return <div>Loading...</div>;
   }
+
+  return (
+    <ImageEvaluation
+      bucketName={folderName}
+      file={fileDetails.data.file} // Pass the file data
+      initialFiles={initialFiles}
+    />
+  );
 }
