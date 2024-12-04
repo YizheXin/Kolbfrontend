@@ -9,8 +9,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full bg-gray-900">
-      <body className={`${inter.className} h-full`}>
+    <html lang="en" className="h-full">
+      <body className={`${inter.className} h-full flex flex-col bg-gray-900`}>
         {/* Hero Section */}
         <div className="w-full bg-gray-800 py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -20,9 +20,19 @@ export default function RootLayout({
         </div>
 
         {/* Main Content */}
-        <div className="max-w-7xl bg-gray-800 mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-8 rounded-lg">
+        <main className="flex-1 flex flex-col max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
           {children}
-        </div>
+        </main>
+
+        {/* Footer */}
+        <footer className="w-full py-4 bg-gray-800/50 backdrop-blur-sm mt-auto">
+          <div className="text-center text-gray-400 text-sm">
+            Powered by{' '}
+            <span className="font-medium text-gray-300">AddAxis</span>
+            <span className="mx-2">•</span>
+            <span>© 2024</span>
+          </div>
+        </footer>
       </body>
     </html>
   );
