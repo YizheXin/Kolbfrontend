@@ -12,7 +12,7 @@ const patterns = [
   'unclear_backbone',
   'too_wordy',
   'lines_over_arrows',
-  'single_node_chaining',
+  'single_node_chain',
   'sufficient_chunking',
   'question_chunked',
   'segmental_mapping',
@@ -31,7 +31,7 @@ interface ImageEvaluationProps {
 interface ToastState {
   show: boolean;
   message: string;
-  type: 'success' | 'error';
+  type: 'success' | 'error' |'warning';
 }
 
 export default function ImageEvaluation({ bucketName, file }: ImageEvaluationProps) {
@@ -50,7 +50,7 @@ export default function ImageEvaluation({ bucketName, file }: ImageEvaluationPro
     type: 'success'
   });
 
-  const showToast = (message: string, type: 'success' | 'error') => {
+  const showToast = (message: string, type: 'success' | 'error' |'warning') => {
     setToast({ show: true, message, type });
     // Auto-hide after 3 seconds
     setTimeout(() => {
@@ -100,11 +100,18 @@ export default function ImageEvaluation({ bucketName, file }: ImageEvaluationPro
 
       const result = await response.json();
       if (result.success) {
-        showToast('Evaluation submitted successfully', 'success');
-        // Wait for the toast to be visible before navigating
-        setTimeout(() => {
-          router.push(`/${encodeURIComponent(bucketName)}`);
-        }, 1000);
+        if (!isFinished) {
+          showToast(
+            'Not marked as finished - you can come back later to complete the evaluation',
+            'warning'
+          );
+        } else {
+          showToast('Evaluation submitted successfully', 'success');
+          // Only redirect if the evaluation is finished
+          setTimeout(() => {
+            router.push(`/${encodeURIComponent(bucketName)}`);
+          }, 1000);
+        }
       } else {
         throw new Error(result.message || 'Failed to submit evaluation');
       }
