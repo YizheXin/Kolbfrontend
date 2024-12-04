@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter,useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeftIcon, FlagIcon } from '@heroicons/react/24/outline';
 import { MindMapFile, PatternState } from '../types/type';
@@ -41,11 +41,13 @@ export default function ImageEvaluation({
   initialFiles, // Access all files in the bucket
 }: ImageEvaluationProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const collectionName = bucketName;
 
   // Find the current file's index
   const currentIndex = initialFiles.findIndex((f) => f.name === file.name);
-
+  // Get the current page from the URL
+  const currentPage = searchParams.get('page') || '1';
   // Initialize all patterns as false
   const initialPatternState = Object.fromEntries(patterns.map((p) => [p, false]));
   const [selectedPatterns, setSelectedPatterns] = useState<PatternState>(initialPatternState);
@@ -146,14 +148,21 @@ export default function ImageEvaluation({
   const handleNext = () => {
     if (currentIndex < initialFiles.length - 1) {
       const nextFile = initialFiles[currentIndex + 1];
-      router.push(`/${encodeURIComponent(bucketName)}/${encodeURIComponent(nextFile.name)}`);
+      const nextPage = Math.floor((currentIndex + 1) / 12) + 1; // Calculate next page
+      router.push(
+        `/${encodeURIComponent(bucketName)}/${encodeURIComponent(nextFile.name)}?page=${nextPage}`
+      );
     }
   };
+  
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
       const prevFile = initialFiles[currentIndex - 1];
-      router.push(`/${encodeURIComponent(bucketName)}/${encodeURIComponent(prevFile.name)}`);
+      const prevPage = Math.floor((currentIndex - 1) / 12) + 1; // Calculate previous page
+      router.push(
+        `/${encodeURIComponent(bucketName)}/${encodeURIComponent(prevFile.name)}?page=${prevPage}`
+      );
     }
   };
 
@@ -173,7 +182,7 @@ export default function ImageEvaluation({
       {/* Navigation */}
       <div className="mb-6 flex justify-between">
         <button
-          onClick={() => router.push(`/${encodeURIComponent(bucketName)}`)}
+          onClick={() => router.push(`/${encodeURIComponent(bucketName)}?page=${currentPage}`)}
           className="flex items-center text-gray-400 hover:text-white transition-colors"
         >
           <ArrowLeftIcon className="h-5 w-5 mr-2" />
