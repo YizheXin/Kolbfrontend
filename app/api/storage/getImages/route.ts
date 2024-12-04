@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       prefix: `${folder}/`,
       delimiter: '/'
     });
-    console.log("Files retrieved from bucket:", files,folder);
+   
     const fileList = await Promise.all(
       files
         .filter(file => {
@@ -46,7 +46,6 @@ export async function GET(request: NextRequest) {
             const [metadata] = await file.getMetadata();
             const sizeInBytes = parseSize(metadata.size);
             const url = formatGCSUrl(mindmapBucketName, folder, file.name);
-            console.log("Checking the generated URL:", url);
             return {
               name: file.name.split('/').pop() || '',
               timeCreated: metadata.timeCreated || 'N/A',

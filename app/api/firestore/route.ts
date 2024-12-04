@@ -26,11 +26,11 @@ export async function GET(request: NextRequest) {
       const doc = await docRef.get();
 
       // Add more detailed logging
-      console.log('Document reference:', docRef.path);
-      console.log('Document exists:', doc.exists);
+      // console.log('Document reference:', docRef.path);
+      // console.log('Document exists:', doc.exists);
       if (doc.exists) {
         const data = doc.data();
-        console.log('Document data:', JSON.stringify(data, null, 2));
+        // console.log('Document data:', JSON.stringify(data, null, 2));
         return NextResponse.json({ 
           success: true, 
           data: data,
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
           }
         });
       } else {
-        console.log('Document does not exist');
+        // console.log('Document does not exist');
         return NextResponse.json({ 
           success: false, 
           message: 'Document not found',
@@ -74,7 +74,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('Received POST body:', body);
 
     const { collection, fileName, patterns, isFinished } = body;
 
@@ -103,8 +102,6 @@ export async function POST(request: NextRequest) {
       //   projectId: process.env.NEXT_PUBLIC_GOOGLE_CLOUD_PROJECT
       // }
     };
-
-    console.log('Writing document data:', documentData);
 
     // First check if document exists
     const existingDoc = await docRef.get();
