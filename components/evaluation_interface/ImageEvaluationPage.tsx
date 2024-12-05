@@ -13,7 +13,7 @@ const patterns = [
   'too_wordy',
   'lines_over_arrows',
   'single_node_chain',
-  'sufficient_chunking',
+  'insufficient_chunking',
   'question_chunked',
   'segmental_mapping',
   'islands',
