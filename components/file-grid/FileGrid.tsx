@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { MagnifyingGlassIcon, ArrowLeftIcon, CheckCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { MindMapFile } from '../types/type';
 import { generatePagination } from './Pagination';
 import { useFileContext } from '@/context/FileContext';
-
+import { useEvaluation } from '@/context/EvaluationContext';
 interface FileGridProps {
   bucketName: string;
 }
@@ -21,14 +21,26 @@ interface FileStatus {
   [key: string]: EvaluationStatus | null;
 }
 
+interface StatusCounts {
+  completed: number;
+  inProgress: number;
+  total: number;
+}
+
 export default function FileGrid({ bucketName }: FileGridProps) {
   const { initialFiles } = useFileContext();
+  const { fileStatuses, setFileStatuses } = useEvaluation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [fileStatuses, setFileStatuses] = useState<FileStatus>({});
-  const [statusesFetchedForPage, setStatusesFetchedForPage] = useState(false); // Track if current page's statuses are fetched
+  const [statusCounts, setStatusCounts] = useState<StatusCounts>({
+    completed: 0,
+    inProgress: 0,
+    total: initialFiles.length
+  });
+
+  const [loadingStatuses, setLoadingStatuses] = useState(true);
   const itemsPerPage = 12;
 
   // Calculate paginated files
@@ -45,13 +57,6 @@ export default function FileGrid({ bucketName }: FileGridProps) {
     };
   }, [initialFiles, searchQuery, currentPage, itemsPerPage]);
 
-  // Calculate total evaluated files
-  const evaluatedCount = useMemo(() => {
-    return Object.values(fileStatuses).filter(
-      (status) => status !== null && status.isFinished
-    ).length;
-  }, [fileStatuses]);
-
   const fetchStatus = async (fileName: string) => {
     try {
       const response = await fetch(
@@ -65,33 +70,65 @@ export default function FileGrid({ bucketName }: FileGridProps) {
     }
   };
 
+  // Update status counts based on context
+  const updateStatusCounts = useCallback((statuses: FileStatus) => {
+    const counts = Object.values(statuses).reduce(
+      (acc, status) => {
+        if (status?.isFinished) {
+          acc.completed += 1;
+        } else if (status !== null) {
+          acc.inProgress += 1;
+        }
+        return acc;
+      },
+      { completed: 0, inProgress: 0, total: initialFiles.length }
+    );
+    setStatusCounts(counts);
+  }, [initialFiles.length]);
+
+  // Update effect to use the callback
+  useEffect(() => {
+    updateStatusCounts(fileStatuses);
+  }, [fileStatuses, updateStatusCounts]);
+  // Initialize status tracking
+  
   useEffect(() => {
     let mounted = true;
+    setLoadingStatuses(true);
 
-    const fetchStatusesForCurrentPage = async () => {
-      const newStatuses: FileStatus = {};
-      setStatusesFetchedForPage(false); // Reset for new page
+    const fetchMissingStatuses = async () => {
+      try {
+        // Only fetch statuses for files that don't have a status in context
+        const missingFiles = paginatedFiles.currentFiles.filter(
+          file => fileStatuses[file.name] === undefined
+        );
 
-      for (const file of paginatedFiles.currentFiles) {
-        if (!mounted) break;
-        const status = await fetchStatus(file.name);
-        if (mounted) {
-          newStatuses[file.name] = status;
-          setFileStatuses((prev) => ({ ...prev, [file.name]: status })); // Update statuses incrementally
+        if (missingFiles.length > 0) {
+          const statusPromises = missingFiles.map(async (file) => {
+            const status = await fetchStatus(file.name);
+            if (mounted) {
+              setFileStatuses(prev => ({
+                ...prev,
+                [file.name]: status
+              }));
+            }
+          });
+
+          await Promise.all(statusPromises);
         }
-      }
-
-      if (mounted) {
-        setStatusesFetchedForPage(true); // Mark current page's statuses as fetched
+      } finally {
+        if (mounted) {
+          setLoadingStatuses(false);
+        }
       }
     };
 
-    fetchStatusesForCurrentPage();
+    fetchMissingStatuses();
 
     return () => {
       mounted = false;
     };
-  }, [bucketName, paginatedFiles.currentFiles]);
+  }, [bucketName, paginatedFiles.currentFiles, fileStatuses]);
 
   // Handle URL page parameter
   useEffect(() => {
@@ -136,7 +173,7 @@ export default function FileGrid({ bucketName }: FileGridProps) {
       return (
         <div className="flex items-center text-gray-400 text-xs">
           <ClockIcon className="h-4 w-4 mr-1 animate-spin" />
-          Loading...
+          Loading status...
         </div>
       );
     }
@@ -184,25 +221,23 @@ export default function FileGrid({ bucketName }: FileGridProps) {
 
           <span className="text-sm bg-gray-700 px-3 py-1 rounded-full flex items-center gap-3">
             <span>
-              <span className="text-green-400 font-medium">{evaluatedCount}</span>
+              <span className="text-green-400 font-medium">{statusCounts.completed}</span>
               <span className="text-gray-400">/</span>
-              <span className="text-gray-300">{initialFiles.length}</span>
+              <span className="text-gray-300">{statusCounts.total}</span>
               <span className="text-gray-400"> completed</span>
             </span>
             <span className="text-gray-400">•</span>
             <span>
-              <span className="text-yellow-400 font-medium">{Object.values(fileStatuses).filter(status => 
-                status !== null && !status.isFinished
-              ).length}</span>
+              <span className="text-yellow-400 font-medium">{statusCounts.inProgress}</span>
               <span className="text-gray-400">/</span>
-              <span className="text-gray-300">{initialFiles.length}</span>
+              <span className="text-gray-300">{statusCounts.total}</span>
               <span className="text-gray-400"> in progress</span>
             </span>
           </span>
         </div>
-        {statusesFetchedForPage &&
-          evaluatedCount === initialFiles.length &&
-          initialFiles.length > 0 && (
+        {!loadingStatuses && 
+          statusCounts.completed === statusCounts.total && 
+          statusCounts.total > 0 && (
             <div className="bg-green-500 text-white p-4 rounded-md mb-4 text-center">
               🎉 Congratulations! You have completed all the labeling tasks. Please contact the
               developer team for the next step.
@@ -221,38 +256,32 @@ export default function FileGrid({ bucketName }: FileGridProps) {
       </div>
 
       {/* Files Grid */}
-      {!statusesFetchedForPage && paginatedFiles.totalFiles > 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-400">Loading files...</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {paginatedFiles.currentFiles.map((file) => (
-            <motion.div
-              key={file.blobPath}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleFileSelect(file)}
-              className="bg-gray-800 rounded-lg overflow-hidden cursor-pointer group"
-            >
-              <div className="aspect-w-16 aspect-h-9 relative">
-                <img
-                  src={file.url}
-                  alt={file.name}
-                  className="w-full h-full object-cover transition-opacity group-hover:opacity-90"
-                />
-              </div>
-              <div className="p-3">
-                <p className="text-sm text-gray-300 truncate">{file.name}</p>
-                <p className="text-xs text-gray-500 mt-1">
-                  {new Date(file.timeCreated).toLocaleDateString()}
-                </p>
-                <div className="mt-2">{renderStatusIndicator(file)}</div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {paginatedFiles.currentFiles.map((file) => (
+          <motion.div
+            key={file.blobPath}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => handleFileSelect(file)}
+            className="bg-gray-800 rounded-lg overflow-hidden cursor-pointer group"
+          >
+            <div className="aspect-w-16 aspect-h-9 relative">
+              <img
+                src={file.url}
+                alt={file.name}
+                className="w-full h-full object-cover transition-opacity group-hover:opacity-90"
+              />
+            </div>
+            <div className="p-3">
+              <p className="text-sm text-gray-300 truncate">{file.name}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {new Date(file.timeCreated).toLocaleDateString()}
+              </p>
+              <div className="mt-2">{renderStatusIndicator(file)}</div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
 
       {/* Pagination */}
       {paginatedFiles.totalPages > 1 && (

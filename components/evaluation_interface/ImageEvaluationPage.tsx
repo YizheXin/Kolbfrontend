@@ -7,7 +7,8 @@ import { ArrowLeftIcon, FlagIcon } from '@heroicons/react/24/outline';
 import { MindMapFile, PatternState } from '../types/type';
 import { constructVercelURL } from '@/utils/generateURL';
 import Toast from '../notification/Toast';
-
+import { EvaluationStatus } from '../types/type';
+import { useEvaluation } from '@/context/EvaluationContext';
 const patterns = [
   'unclear_backbone',
   'too_wordy',
@@ -27,6 +28,7 @@ interface ImageEvaluationProps {
   bucketName: string;
   file: MindMapFile;
   initialFiles: MindMapFile[]; // Add this to track all files in the bucket
+  onStatusUpdate?: (fileName: string, status: EvaluationStatus) => void;
 }
 
 interface ToastState {
@@ -40,6 +42,7 @@ export default function ImageEvaluation({
   file,
   initialFiles, // Access all files in the bucket
 }: ImageEvaluationProps) {
+  const { updateStatus } = useEvaluation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const collectionName = bucketName;
@@ -113,6 +116,10 @@ export default function ImageEvaluation({
 
       const result = await response.json();
       if (result.success) {
+        updateStatus(file.name, {
+          isFinished,
+          patterns: selectedPatterns,
+        });
         if (!isFinished) {
           showToast(
             'Not marked as finished - you can come back later to complete the evaluation',
@@ -121,7 +128,7 @@ export default function ImageEvaluation({
         } else {
           showToast('Evaluation submitted successfully', 'success');
           setTimeout(() => {
-            router.push(`/${encodeURIComponent(bucketName)}`);
+            router.push(`/${encodeURIComponent(bucketName)}?page=${currentPage}`);
           }, 1000);
         }
       } else {

@@ -1,47 +1,27 @@
-'use client';
-
-import { useEffect, useState } from 'react';
+// app/[folderName]/[fileName]/page.tsx
 import { StorageOperations } from '@/features/routes/handleStorageOperations';
-import ImageEvaluation from '@/components/evaluation_interface/ImageEvaluationPage';
-import { useFileContext } from '@/context/FileContext';
+import ImagePage from './ImagePageClient';
 import { notFound } from 'next/navigation';
-import { FileResponse, MindMapFile } from '@/components/types/type';
 
-export default function ImagePage({ params: { folderName, fileName } }: { params: { folderName: string; fileName: string } }) {
-  const { initialFiles } = useFileContext();
-  const [fileDetails, setFileDetails] = useState<FileResponse | null>(null);
+export default async function Page({ 
+  params: { folderName, fileName } 
+}: { 
+  params: { folderName: string; fileName: string } 
+}) {
+  const decodedFolderName = decodeURIComponent(folderName);
+  const decodedFileName = decodeURIComponent(fileName);
+  
+  const response = await StorageOperations.fetchFileDetails(decodedFolderName, decodedFileName);
 
-  useEffect(() => {
-    const fetchFileDetails = async () => {
-      if (!initialFiles || initialFiles.length === 0) {
-        notFound();
-      }
-
-      const decodedFolderName = decodeURIComponent(folderName);
-      const decodedFileName = decodeURIComponent(fileName);
-
-      const response = await StorageOperations.fetchFileDetails(decodedFolderName, decodedFileName);
-
-      if (!response.success || !response.data) {
-        notFound();
-      }
-
-      setFileDetails(response); // Set the entire response
-    };
-
-    fetchFileDetails();
-  }, [folderName, fileName, initialFiles]);
-
-  if (!fileDetails || !fileDetails.data) {
-    // Show a loading or error state if `fileDetails` is not ready
-    return <div>Loading...</div>;
+  if (!response.success || !response.data) {
+    notFound();
   }
 
   return (
-    <ImageEvaluation
-      bucketName={folderName}
-      file={fileDetails.data.file} // Pass the file data
-      initialFiles={initialFiles}
+    <ImagePage 
+      folderName={folderName}
+      fileName={fileName}
+      fileDetails={response.data}  // Pass just the data, not the whole response
     />
   );
 }
