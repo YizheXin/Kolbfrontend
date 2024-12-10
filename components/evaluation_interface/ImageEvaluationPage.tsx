@@ -9,6 +9,7 @@ import { constructVercelURL } from '@/utils/generateURL';
 import Toast from '../notification/Toast';
 import { EvaluationStatus } from '../types/type';
 import { useEvaluation } from '@/context/EvaluationContext';
+import { FullScreenImage } from './FullScreenImage';
 const patterns = [
   'unclear_backbone',
   'too_wordy',
@@ -57,6 +58,7 @@ export default function ImageEvaluation({
   const [isFinished, setIsFinished] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const [toast, setToast] = useState<ToastState>({
     show: false,
     message: '',
@@ -68,6 +70,10 @@ export default function ImageEvaluation({
     setTimeout(() => {
       setToast((prev) => ({ ...prev, show: false }));
     }, 3000);
+  };
+
+  const toggleFullScreen = () => {
+    setIsFullScreen(!isFullScreen);
   };
 
   useEffect(() => {
@@ -174,7 +180,18 @@ export default function ImageEvaluation({
   };
 
   return (
+    <>
     <div className="min-h-screen bg-gray-900 p-8">
+      {/* Full Screen Image Modal */}
+      <AnimatePresence>
+        {isFullScreen && (
+          <FullScreenImage
+            image={file}
+            onClose={() => setIsFullScreen(false)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Toast Notification */}
       <AnimatePresence>
         {toast.show && (
@@ -220,11 +237,13 @@ export default function ImageEvaluation({
           className="bg-gray-800 rounded-lg p-4 flex justify-center items-center"
           style={{ width: '65%', maxWidth: '850px', height: '550px' }}
         >
-          <div className="relative w-full h-full rounded-md overflow-hidden border border-gray-700">
+          <div className="w-full h-full rounded-md overflow-hidden border border-gray-700">
             <img
               src={file.url}
               alt={file.name}
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain cursor-pointer hover:opacity-75 transition-opacity duration-200"
+              onClick={toggleFullScreen}
+              draggable={false}
             />
           </div>
         </div>
@@ -281,5 +300,6 @@ export default function ImageEvaluation({
         </div>
       </div>
     </div>
+    </>
   );
 }
