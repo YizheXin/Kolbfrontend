@@ -1,11 +1,11 @@
-// context/EvaluationContext.tsx
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { EvaluationStatus, FileStatus } from '@/components/types/type';
 
 interface EvaluationContextType {
-  updateStatus: (fileName: string, status: EvaluationStatus) => void;
+  updateStatus: (fileName: string, status: EvaluationStatus) => Promise<void>;
+  fetchStatuses: (bucketName: string) => Promise<void>;
   fileStatuses: FileStatus;
   setFileStatuses: React.Dispatch<React.SetStateAction<FileStatus>>;
 }
@@ -16,48 +16,59 @@ interface EvaluationProviderProps {
   children: React.ReactNode;
 }
 
-const STORAGE_KEY = 'evaluation_statuses';
-
 export function EvaluationProvider({ children }: EvaluationProviderProps) {
-  const [fileStatuses, setFileStatuses] = useState<FileStatus>(() => {
-    // Initialize from localStorage if available
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        return saved ? JSON.parse(saved) : {};
-      } catch (error) {
-        console.error('Error loading evaluation statuses:', error);
-        return {};
-      }
-    }
-    return {};
-  });
+  const [fileStatuses, setFileStatuses] = useState<FileStatus>({});
 
-  // Persist to localStorage whenever fileStatuses changes
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(fileStatuses));
-      } catch (error) {
-        console.error('Error saving evaluation statuses:', error);
+  // Fetch statuses from the backend for a specific bucket
+  const fetchStatuses = async (bucketName: string) => {
+    try {
+      const response = await fetch(`/api/firestore?collection=${bucketName}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch statuses for bucket ${bucketName}`);
       }
+      const result = await response.json();
+      if (result.success && result.data) {
+        setFileStatuses(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching statuses:', error);
     }
-  }, [fileStatuses]);
+  };
 
-  const updateStatus = (fileName: string, status: EvaluationStatus) => {
-    setFileStatuses(prev => {
-      const newStatuses = {
+  // Update status in the backend and local state
+  const updateStatus = async (fileName: string, status: EvaluationStatus) => {
+    try {
+      // Update the backend
+      const response = await fetch(`/api/firestore`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileName,
+          status,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update status in the backend');
+      }
+
+      // Update local state
+      setFileStatuses((prev) => ({
         ...prev,
-        [fileName]: status
-      };
-      return newStatuses;
-    });
+        [fileName]: status,
+      }));
+    } catch (error) {
+      console.error(`Error updating status for ${fileName}:`, error);
+    }
   };
 
   const value = {
     updateStatus,
+    fetchStatuses,
     fileStatuses,
-    setFileStatuses
+    setFileStatuses,
   };
 
   return (
