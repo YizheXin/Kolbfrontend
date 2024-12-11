@@ -51,11 +51,13 @@ export default function BucketGrid({ initialBuckets }: BucketGridProps) {
           >
             <div className="flex items-center space-x-3">
               <FolderIcon className="h-6 w-6 text-blue-400" />
-              <div className="flex-1">
-                <span className="text-white block">{bucket.displayName || bucket.name}</span>
-                {bucket.itemCount !== undefined && (
-                  <span className="text-gray-400 text-sm">{bucket.itemCount} items</span>
-                )}
+              <div className="max-w-full">
+              <span
+                  className="text-white block truncate"
+                  title={bucket.displayName || bucket.name}
+                >
+                  {bucket.displayName || bucket.name}
+                </span>
               </div>
             </div>
           </motion.div>
