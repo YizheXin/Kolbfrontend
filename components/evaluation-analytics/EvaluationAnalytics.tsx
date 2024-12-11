@@ -11,6 +11,8 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import { useRouter } from 'next/navigation';
 import { constructVercelURL } from '@/utils/generateURL';
 
 // Register the necessary Chart.js components
@@ -30,6 +32,7 @@ interface AnalyticsData {
 }
 
 export default function EvaluationAnalytics({ bucketName }: EvaluationAnalyticsProps) {
+  const router = useRouter();
   const [stats, setStats] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -95,19 +98,35 @@ export default function EvaluationAnalytics({ bucketName }: EvaluationAnalyticsP
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold text-white mb-6">Detailed Analytics</h1>
-
+      {/* Back to Files Button */}
+      <div className="flex justify-start mb-6">
+        <button
+          onClick={() => router.push(`/${bucketName}`)}
+          className="flex items-center text-gray-400 hover:text-white transition-colors"
+        >
+          <ArrowLeftIcon className="h-5 w-5 mr-2" />
+          <span className="text-lg font-medium">Back to Files</span>
+        </button>
+      </div>
+      
+      {/* Overview Section */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-gray-300 mb-4">Overview</h2>
-        <p className="text-gray-400">Images in Progress: <span className="text-yellow-400">{stats.inProgress}</span></p>
-        <p className="text-gray-400">Images Finished: <span className="text-green-400">{stats.finished}</span></p>
+        <p className="text-gray-400">
+          Images in Progress: <span className="text-yellow-400">{stats.inProgress}</span>
+        </p>
+        <p className="text-gray-400">
+          Images Finished: <span className="text-green-400">{stats.finished}</span>
+        </p>
       </div>
 
+      {/* Quality Assessment Chart */}
       <div className="mb-8">
         <h2 className="text-xl font-semibold text-gray-300 mb-4">Quality Assessment</h2>
         <Bar data={qualityData} options={{ responsive: true }} />
       </div>
 
+      {/* Pattern Distribution Chart */}
       <div>
         <h2 className="text-xl font-semibold text-gray-300 mb-4">Pattern Distribution</h2>
         <Bar data={patternsData} options={{ responsive: true }} />
