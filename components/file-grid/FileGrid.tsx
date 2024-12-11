@@ -191,6 +191,7 @@ export default function FileGrid({ bucketName }: FileGridProps) {
 
     return (
       <div className="flex items-center space-x-2">
+        
         <div
           className={`flex items-center ${
             status.isFinished ? 'text-green-500' : 'text-yellow-500'
@@ -218,22 +219,31 @@ export default function FileGrid({ bucketName }: FileGridProps) {
             <ArrowLeftIcon className="h-5 w-5 mr-2" />
             Back to Buckets
           </button>
-
-          <span className="text-sm bg-gray-700 px-3 py-1 rounded-full flex items-center gap-3">
-            <span>
-              <span className="text-green-400 font-medium">{statusCounts.completed}</span>
-              <span className="text-gray-400">/</span>
-              <span className="text-gray-300">{statusCounts.total}</span>
-              <span className="text-gray-400"> completed</span>
-            </span>
-            <span className="text-gray-400">•</span>
-            <span>
-              <span className="text-yellow-400 font-medium">{statusCounts.inProgress}</span>
-              <span className="text-gray-400">/</span>
-              <span className="text-gray-300">{statusCounts.total}</span>
-              <span className="text-gray-400"> in progress</span>
-            </span>
-          </span>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.push(`/${encodeURIComponent(bucketName)}/analytics`)}
+                className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg"
+              >
+                See Detailed Analytics
+              </button>
+              <span className="text-sm bg-gray-700 px-3 py-1 rounded-full flex items-center gap-3">
+                <span>
+                  <span className="text-green-400 font-medium">{statusCounts.completed}</span>
+                  <span className="text-gray-400">/</span>
+                  <span className="text-gray-300">{statusCounts.total}</span>
+                  <span className="text-gray-400"> completed</span>
+                </span>
+                <span className="text-gray-400">•</span>
+                <span>
+                  <span className="text-yellow-400 font-medium">{statusCounts.inProgress}</span>
+                  <span className="text-gray-400">/</span>
+                  <span className="text-gray-300">{statusCounts.total}</span>
+                  <span className="text-gray-400"> in progress</span>
+                </span>
+              </span>
+            </div>
+          </div>
         </div>
         {!loadingStatuses && 
           statusCounts.completed === statusCounts.total && 
