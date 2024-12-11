@@ -11,20 +11,20 @@ const loggedFirestore = {
   collection: (collectionName: string) => {
     console.log(`Accessing collection: ${collectionName}`);
     const collection = firestore.collection(collectionName);
-    
+
     return {
       ...collection,
       doc: (docName: string) => {
         console.log(`Accessing document: ${docName}`);
         const doc = collection.doc(docName);
-        
+
         return {
           ...doc,
           set: async (data: any, options?: any) => {
             console.log(`Setting document data:`, {
               collection: collectionName,
               document: docName,
-              data: data
+              data: data,
             });
             try {
               const result = await doc.set(data, options);
@@ -41,18 +41,31 @@ const loggedFirestore = {
               const result = await doc.get();
               console.log('Document fetch result:', {
                 exists: result.exists,
-                data: result.data()
+                data: result.data(),
               });
               return result;
             } catch (error) {
               console.error('Error getting document:', error);
               throw error;
             }
-          }
+          },
         };
-      }
+      },
+      get: async () => {
+        console.log(`Fetching all documents in collection: ${collectionName}`);
+        try {
+          const snapshot = await collection.get();
+          console.log(
+            `Fetched ${snapshot.size} documents from collection: ${collectionName}`
+          );
+          return snapshot;
+        } catch (error) {
+          console.error('Error fetching collection documents:', error);
+          throw error;
+        }
+      },
     };
-  }
+  },
 };
 
 export { loggedFirestore as firestore };
