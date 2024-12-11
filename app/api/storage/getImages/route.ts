@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       files
         .filter(file => {
           const isNotFolder = !file.name.endsWith('/');
-          const isImage = /\.(jpg|jpeg|png)$/i.test(file.name);
+          const isImage = /\.(jpg|jpeg|png|webp|pneg)$/i.test(file.name);
           return isNotFolder && isImage;
         })
         .map(async file => {
