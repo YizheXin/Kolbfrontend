@@ -7,9 +7,12 @@ import { ArrowLeftIcon, FlagIcon } from '@heroicons/react/24/outline';
 import { MindMapFile, PatternState } from '../types/type';
 import { constructVercelURL } from '@/utils/generateURL';
 import Toast from '../notification/Toast';
+import InfoIconWithTooltip from '../Tooltip';
+import { Tooltip } from "flowbite-react";
 import { EvaluationStatus } from '../types/type';
 import { useEvaluation } from '@/context/EvaluationContext';
 import { FullScreenImage } from './FullScreenImage';
+import QualityAssessment from './QualityAssesmentSection';
 const patterns = [
   'unclear_backbone',
   'too_wordy',
@@ -56,6 +59,8 @@ export default function ImageEvaluation({
   const initialPatternState = Object.fromEntries(patterns.map((p) => [p, false]));
   const [selectedPatterns, setSelectedPatterns] = useState<PatternState>(initialPatternState);
   const [isFinished, setIsFinished] = useState<boolean>(false);
+  const [isGoodQuality, setIsGoodQuality] = useState<boolean | null>(null); 
+  const [badQualityType, setBadQualityType] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -94,6 +99,8 @@ export default function ImageEvaluation({
             ...existingPatterns,
           });
           setIsFinished(result.data.isFinished || false);
+          setIsGoodQuality(result.data.isGoodQuality ?? null); 
+          setBadQualityType(result.data.badQualityType ?? null)
         }
       } catch (error) {
         console.error('Error fetching evaluation data:', error);
@@ -117,6 +124,8 @@ export default function ImageEvaluation({
           fileName: file.name,
           patterns: selectedPatterns,
           isFinished,
+          isGoodQuality,
+          badQualityType
         }),
       });
 
@@ -254,7 +263,13 @@ export default function ImageEvaluation({
             <div className="text-center">Loading...</div>
           ) : (
             <>
-              <h3 className="text-xl text-white mb-4">Evaluation Patterns</h3>
+      
+              <div className="flex items-center mb-4">
+                <h3 className="text-xl text-white">Evaluation Patterns</h3>
+                <InfoIconWithTooltip
+                  message="Tick the pattern(s) if you think they exist in the image. You can modify your selection at any time before submission."
+                />
+              </div>
               <div className="space-y-3">
                 {patterns.map((pattern) => (
                   <motion.label
@@ -273,27 +288,49 @@ export default function ImageEvaluation({
                   </motion.label>
                 ))}
               </div>
-
+              
+              {/* Quality Assessment */}
+              <QualityAssessment
+                initialIsGoodQuality={isGoodQuality} 
+                initialBadQualityType={badQualityType} 
+                onQualityChange={(quality, reason) => {
+                  setIsGoodQuality(quality);
+                  setBadQualityType(reason);
+                }}
+              />
               <div className="space-y-3 mt-4">
-                <button
-                  onClick={() => setIsFinished(!isFinished)}
-                  disabled={isSubmitting}
-                  className={`w-full flex items-center justify-center space-x-2 py-2 px-4 rounded-lg transition-colors ${
-                    isFinished
-                      ? 'bg-green-600 hover:bg-green-700 text-white'
-                      : 'bg-gray-600 hover:bg-gray-700 text-white'
-                  }`}
+                {/* Flag as Finished Button */}
+                <Tooltip
+                  content="Confirmed your evaluation? Flag it as finished before submitting. You can always resubmit later."
+                  placement="right"
                 >
-                  <FlagIcon className="h-5 w-5" />
-                  <span>{isFinished ? 'Evaluation Finished' : 'Flag as Finished'}</span>
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  <button
+                    onClick={() => setIsFinished(!isFinished)}
+                    disabled={isSubmitting}
+                    className={`w-full flex items-center justify-center space-x-2 py-2 px-4 rounded-lg transition-colors ${
+                      isFinished
+                        ? 'bg-green-600 hover:bg-green-700 text-white'
+                        : 'bg-gray-600 hover:bg-gray-700 text-white'
+                    }`}
+                  >
+                    <FlagIcon className="h-5 w-5" />
+                    <span>{isFinished ? 'Evaluation Finished' : 'Flag as Finished'}</span>
+                  </button>
+                </Tooltip>
+
+                {/* Submit Evaluation Button */}
+                <Tooltip
+                  content="Submit your evaluation even if not flagged as finished. You can always resubmit later."
+                  placement="right"
                 >
-                  {isSubmitting ? 'Submitting...' : 'Submit Evaluation'}
-                </button>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit Evaluation'}
+                  </button>
+                </Tooltip>
               </div>
             </>
           )}
