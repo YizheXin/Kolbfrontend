@@ -75,10 +75,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const { collection, fileName, patterns, isFinished } = body;
+    const { collection, fileName, patterns, isFinished ,isGoodQuality,badQualityType} = body;
 
     if (!collection || !fileName || !patterns || isFinished === undefined) {
-      console.log('Missing required fields:', { collection, fileName, patterns, isFinished });
+      console.log('Missing required fields:', { collection, fileName, patterns, isFinished});
       return NextResponse.json(
         { success: false, message: 'Missing required fields' },
         { status: 400 }
@@ -94,6 +94,8 @@ export async function POST(request: NextRequest) {
     const documentData = {
       patterns,
       isFinished,
+      isGoodQuality,
+      badQualityType,
       updatedAt: new Date(),
       createdAt: new Date(),
       // metadata: {
