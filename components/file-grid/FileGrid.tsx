@@ -146,7 +146,7 @@ export default function FileGrid({ bucketName }: FileGridProps) {
       ? file.name.split('/').pop() || file.name
       : file.name;
     router.push(
-      `/${encodeURIComponent(bucketName)}/${encodeURIComponent(fileName)}?page=${currentPage}`
+      `/${encodeURIComponent(bucketName)}/${encodeURIComponent(fileName)}`
     );
   };
 

@@ -8,11 +8,34 @@ import { MindMapFile, PatternState } from '../types/type';
 import { constructVercelURL } from '@/utils/generateURL';
 import Toast from '../notification/Toast';
 import InfoIconWithTooltip from '../Tooltip';
-import { Tooltip } from "flowbite-react";
+import { Tooltip, Table, TextInput, Textarea } from "flowbite-react";
 import { EvaluationStatus } from '../types/type';
 import { useEvaluation } from '@/context/EvaluationContext';
 import { FullScreenImage } from './FullScreenImage';
 import QualityAssessment from './QualityAssesmentSection';
+
+// 1. 引入 KolbReflectionForm
+import KolbReflectionForm from './KolbReflectionForm';
+
+// 用于 KolbReflectionForm 的类型（如果你需要在这里也使用）
+interface FormData {
+  testCaseId: string;
+  tester: string;
+  stage: string;
+  isKolbCycleReflection: string;
+  experienceToReflect: string;
+  marginalGain: string;
+  sequenceOfEvents: string;
+  feelingsAboutExperience: string;
+  processAspects: string;
+  challengeResponse: string;
+  feelingTriggers: string;
+  actionReasons: string;
+  habitsAndBeliefs: string;
+  similarResponses: string;
+  potentialSolutions: string;
+}
+
 const patterns = [
   'unclear_backbone',
   'too_wordy',
@@ -40,6 +63,7 @@ interface ToastState {
   message: string;
   type: 'success' | 'error' | 'warning';
 }
+
 
 export default function ImageEvaluation({
   bucketName,
@@ -113,6 +137,8 @@ export default function ImageEvaluation({
     fetchEvaluation();
   }, [collectionName, file.name]);
 
+  
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
@@ -142,9 +168,9 @@ export default function ImageEvaluation({
           );
         } else {
           showToast('Evaluation submitted successfully', 'success');
-          setTimeout(() => {
-            router.push(`/${encodeURIComponent(bucketName)}?page=${currentPage}`);
-          }, 1000);
+          // setTimeout(() => {
+          //   router.push(`/${encodeURIComponent(bucketName)}?page=${currentPage}`);
+          // }, 1000);
         }
       } else {
         throw new Error(result.message || 'Failed to submit evaluation');
@@ -188,6 +214,13 @@ export default function ImageEvaluation({
     }
   };
 
+  // 2. 处理 KolbReflectionForm 提交的回调（你可将此函数与其他逻辑结合）
+  const handleKolbFormSubmit = (data: FormData) => {
+    console.log('Kolb Reflection Form Data: ', data);
+    // TODO: 你可以在这里将 data 发送到后端，或者与现有的 handleSubmit 融合
+  };
+
+    
   return (
     <>
     <div className="min-h-screen bg-gray-900 p-8">
@@ -241,20 +274,21 @@ export default function ImageEvaluation({
 
       {/* Main Content */}
       <div className="flex gap-8 h-[calc(100vh-120px)]">
-        {/* Image Display */}
+        {/* Table */}
         <div
           className="bg-gray-800 rounded-lg p-4 flex justify-center items-center"
-          style={{ width: '65%', maxWidth: '850px', height: '550px' }}
+          style={{ width: '65%', maxWidth: '850px'}}
         >
-          <div className="w-full h-full rounded-md overflow-hidden border border-gray-700">
-            <img
-              src={file.url}
-              alt={file.name}
-              className="w-full h-full object-contain cursor-pointer hover:opacity-75 transition-opacity duration-200"
-              onClick={toggleFullScreen}
-              draggable={false}
+          {/* 放到这里面 */}
+          {/* 3. 在这里放置 KolbReflectionForm */}
+            {/*
+              isSubmitting 你可以与本页面的 state 相结合，也可以用单独的 state
+              onSubmitData 传入 handleKolbFormSubmit 方法
+            */}
+            <KolbReflectionForm 
+              onSubmitData={handleKolbFormSubmit} 
+              isSubmitting={isSubmitting}
             />
-          </div>
         </div>
 
         {/* Evaluation Panel */}

@@ -53,6 +53,8 @@ export async function GET(request: NextRequest) {
       }
     };
 
+    console.log(fileDetails)
+
     return Response.json({
       success: true,
       file: fileDetails,

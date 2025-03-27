@@ -15,8 +15,8 @@ export default function RootLayout({
         {/* Hero Section */}
         <div className="w-full bg-gray-800 py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h1 className="text-4xl font-bold text-white mb-4">Mind Map Evaluation</h1>
-            <p className="text-gray-300 text-lg">Analyze and evaluate mind maps with ease</p>
+            <h1 className="text-4xl font-bold text-white mb-4">KOLBS Evaluation</h1>
+            <p className="text-gray-300 text-lg">Analyze and evaluate Kolbs reflection text</p>
           </div>
         </div>
       

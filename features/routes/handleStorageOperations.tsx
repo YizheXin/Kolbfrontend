@@ -126,6 +126,68 @@
         };
       }
     },
+
+    async fetchFile(folderName: string, fileName: string):Promise<FileResponse> {
+      try {
+
+        // 将 %20 替换为空格
+        const decodedFolderName = decodeURIComponent(folderName).replace(/%20/g, ' ');
+        const decodedFileName = decodeURIComponent(fileName).replace(/%20/g, ' ');
+
+        const url = constructVercelURL(
+          `/api/storage/getFile?folder=${encodeURIComponent(decodedFolderName)}&fileName=${encodeURIComponent(decodedFileName)}`
+        );
+        console.log('Fetching file details from:', url);
+  
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Response not OK:', response.status, errorText);
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const reformattedUrl = formatGCSUrl(
+          process.env.NEXT_PUBLIC_GCP_ICS_MINDMAPS as string,
+          folderName,
+          fileName
+        );
+        const data = await response.json();
+        
+        if (!data.success) {
+          throw new Error(data.message);
+        }
+        
+        return {
+          success: true,
+          data,
+          // data: {
+          //   file: {
+          //     name: data.file.name,
+          //     blobPath: data.file.blobPath,
+          //     url: reformattedUrl,
+          //     timeCreated: data.file.timeCreated,
+          //     size: data.file.size,
+          //     metadata: {
+          //       ...data.file.metadata,
+          //       evaluation: data.file.metadata.evaluation || {
+          //         patterns: [],
+          //         isFinished: false,
+          //         lastModified: new Date().toISOString()
+          //       }
+          //     }
+          //   }
+          // }
+        };
+      } catch (error) {
+        console.error('Error fetching file details:', error);
+        return { 
+          success: false, 
+          message: error instanceof Error ? error.message : 'Failed to fetch file details',
+          data: null
+        };
+      }
+    },
+  
   
     async submitEvaluation(
       bucketName: string,
